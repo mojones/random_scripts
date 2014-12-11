@@ -52,3 +52,5 @@ with open(args.input) as input:
 
 for output in output_files:
     output.close()
+print("done!")
+print("want to learn how to write useful tools like this? Go to http://pythonforbiologists.com/books")
