@@ -6,9 +6,12 @@
 # Fields: query id, subject ids, % identity, % positives, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
 # 100 hits found
 my_protein	gi|60654447|gb|AAX29914.1|	100.00	100.00	599	0	0	1	599	1	599	0.0	 1243
+my_protein	gi|60654447|gb|AAX29914.1|	100.00	100.00	123	0	0	1	599	602	866	0.0	 1243
+my_protein	gi|60654447|gb|AAX29914.1|	100.00	100.00	123	0	0	1	599	702	904	0.0	 1243
 my_protein	gi|397526517|ref|XP_003833169.1|	99.50	100.00	599	3	0	1	599	1	599	0.0	 1240
 my_protein	gi|18104967|ref|NP_000953.2|;gi|317373262|sp|P23219.2|PGH1_HUMAN	99.83	99.83	599	1	0	1	599	1	599	0.0	 1240
 my_protein	gi|674214810|gb|AIK97765.1|	99.83	99.83	599	1	0	1	599	1	599	0.0	 1239
+my_protein	gi|674214810|gb|AIK97765.1|	99.83	99.83	123	1	0	1	599	600	700	0.0	 1239
 my_protein	gi|694936914|ref|XP_009455498.1|	99.33	100.00	599	4	0	1	599	1	599	0.0	 1239
 my_protein	gi|387018|gb|AAA36439.1|	99.50	99.50	599	3	0	1	599	1	599	0.0	 1236
 my_protein	gi|76885916|gb|ABA60099.1|	99.83	99.83	596	1	0	4	599	35	630	0.0	 1234
