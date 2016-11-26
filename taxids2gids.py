@@ -2,12 +2,21 @@
 # wget ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz && tar zxvf taxdump.tar.gz
 # and download refseq catalogue
 # wget ftp://ftp.ncbi.nlm.nih.gov/refseq/release/release-catalog/RefSeq-release79.catalog.gz
+# preformat refseq catalogue with
+# zcat RefSeq-release79.catalog.gz | awk '{print $4 "\t" $1}' | gzip >gi_taxid_refseq.gz
+# useful info: nucl.dmp has ~600M lines, refseq catalog has ~110M lines
 
 import sys
 import gzip
+import argparse
 
-include_taxids = 10239 #viruses
-exclude_taxids = 131567 # cellular organisms
+parser = argparse.ArgumentParser(description='Extract GI numbers from NCBI catalogue files based on taxonomy')
+parser.add_argument('-i', '--include', type=int, nargs='+', help='taxids of groups to include. GI numbers belonging to all child taxids of these will be included in the results', required=True)
+parser.add_argument('-e', '--exclude', type=int, nargs='+', help='taxids of groups to exclude. GI numbers belonging to all child taxids of these will be excluded from the results', default=[])
+parser.add_argument('-f', '--file', help="name of the input file which maps GI number to taxid", required=True)
+parser.add_argument('--silent', help="suppress progress output", default=False, action='store_true')
+args = parser.parse_args()
+
 
 
 def get_children_recursive(taxid):
@@ -27,44 +36,65 @@ def get_children_recursive(taxid):
 
 def read_taxonomy():
     #store parent to child relationships
-    sys.stdout.write("reading NCBI taxonomy")
+    sys.stderr.write("reading NCBI taxonomy")
     parent2child = {}
 
     processed = 0
     nodes = open("nodes.dmp")
     for processed, line in enumerate(nodes):
         if processed %100000 == 0:
-            sys.stdout.write('.')
-            sys.stdout.flush()
+            sys.stderr.write('.')
+            sys.stderr.flush()
         taxid, parent = line.rstrip('\t|\n').split("\t|\t")[0:2]
         taxid = int(taxid)
         parent = int(parent)
         if parent not in parent2child:
             parent2child[parent] = []
         parent2child[parent].append(taxid)
-    print("")
+    sys.stderr.write("\n")
     return parent2child
-
-
 
 #store parent to child relationships
 parent2child = read_taxonomy()
 
-taxids_to_include = set(get_children_recursive(include_taxids))
-taxids_to_exclude = set(get_children_recursive(exclude_taxids))
-taxids_whitelist = taxids_to_include - taxids_to_exclude
+#@profile
+def slow_function():
 
-print("including {} taxids".format(len(taxids_to_include)))
-print("excluding {} taxids".format(len(taxids_to_exclude)))
-print("final whitelist includes {} taxids".format(len(taxids_whitelist)))
 
-with gzip.open('RefSeq-release79.catalog.gz') as f:
-    with open('gids.txt', 'w') as output:
-        for lineno, line in enumerate(f):
-            if lineno %1000000 == 0:
-                print("processed {} refseq lines".format(lineno))
-            taxid, _, _, gi = line.split('\t')[0:4]
-            taxid = int(taxid)
-            #print(taxid, gi)
-            if taxid in taxids_whitelist:
-                output.write(gi + '\n')
+    taxids_to_include = set()
+    for taxid in args.include:
+        sys.stderr.write('Including children of taxid {}\n'.format(taxid))
+        taxids_to_include.update(get_children_recursive(taxid))
+
+    taxids_to_exclude = set()
+    for taxid in args.exclude:
+        sys.stderr.write('Excluding children of taxid {}\n'.format(taxid))
+        taxids_to_exclude.update(get_children_recursive(taxid))
+
+
+    sys.stderr.write("including {:,} taxids in total\n".format(len(taxids_to_include)))
+    sys.stderr.write("excluding {:,} taxids in total\n".format(len(taxids_to_exclude)))
+
+    taxids_whitelist = taxids_to_include - taxids_to_exclude
+    sys.stderr.write("final whitelist includes {:,} taxids\n".format(len(taxids_whitelist)))
+
+    found = 0
+    if args.file.endswith('.gz'):
+        f = gzip.open(args.file, 'rt')
+    else:
+        f = open(args.file, 'rt')
+
+    for lineno, line in enumerate(f):
+        if lineno > 1000000000000:
+            return #for testing
+        if lineno %1000000 == 0 and not args.silent:
+            sys.stderr.write("processed {:,} input lines\n".format(lineno))
+        #sys.stderr.write("line is" + line)
+        (gi,taxid) = line.split('\t')
+        taxid = int(taxid)
+        #print(taxid, gi)
+        if taxid in taxids_whitelist:
+            sys.stdout.write(gi + '\n')
+            found += 1
+    sys.stderr.write("found {:,} GI numbers\n".format(found))
+slow_function()
